@@ -1,10 +1,10 @@
-import {config} from 'dotenv'
+import { config } from "dotenv";
 
-config()
-export const PORT = process.env.PORT || 3000
-export const DB_HOST = process.env.DB_HOST || 'localhost'
-export const DB_USER = process.env.DB_USER || 'root'
-export const DB_PASSWORD = process.env.DB_PASSWORD || 'admin'
-export const DB_NAME = process.env.DB_NAME || 'companydb'
-export const DB_PORT = process.env.DB_PORT || 3306
-export const SECRET_KEY = process.env.SECRET || 'prueba123'
+config();
+export const PORT = process.env.PORT || 3000;
+export const DB_HOST = process.env.DB_HOST || "localhost";
+export const DB_USER = process.env.DB_USER || "root";
+export const DB_PASSWORD = process.env.DB_PASSWORD || "admin";
+export const DB_NAME = process.env.DB_NAME || "companydb";
+export const DB_PORT = process.env.DB_PORT || 3306;
+export const SECRET_KEY = process.env.SECRET || "prueba123";

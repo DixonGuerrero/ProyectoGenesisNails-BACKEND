@@ -7,14 +7,14 @@ import {
   obtenerCategorias,
 } from "../controllers/categoria.controller.js";
 import { validacionCategoria } from "../middlewares/middleware.js";
-import { esEmpleado, verificarToken } from "../middlewares/authJwt.js";
+import { esAdmin, verificarToken } from "../middlewares/authJwt.js";
 
 const router = Router();
 
-router.get("/", verificarToken,esEmpleado,obtenerCategorias);
-router.get("/:id", verificarToken,esEmpleado,obtenerCategoria);
-router.post("/", verificarToken,esEmpleado,validacionCategoria,crearCategoria);
-router.put("/:id", verificarToken,esEmpleado,actualizarCategoria);
-router.delete("/:id", verificarToken,esEmpleado,eliminarCategoria);
+router.get("/", verificarToken, esAdmin, obtenerCategorias);
+router.get("/:id", verificarToken, esAdmin, obtenerCategoria);
+router.post("/", verificarToken, esAdmin, validacionCategoria, crearCategoria);
+router.put("/:id", verificarToken, esAdmin, actualizarCategoria);
+router.delete("/:id", verificarToken, esAdmin, eliminarCategoria);
 
 export default router;

@@ -1,15 +1,18 @@
 import { Router } from "express";
-import { crearSalida, obtenerSalida, obtenerSalidas } from "../controllers/salida.controller.js";
+import {
+  actualizarSalida,
+  crearSalida,
+  obtenerSalida,
+  obtenerSalidas,
+} from "../controllers/salida.controller.js";
 
-import { esEmpleado, verificarToken } from "../middlewares/authJwt.js";
-
+import { esAdmin, verificarToken } from "../middlewares/authJwt.js";
 
 const router = Router();
 
-router.get("/", verificarToken,esEmpleado,obtenerSalidas);
-router.get("/:id", verificarToken,esEmpleado,obtenerSalida);
-router.post("/",verificarToken,esEmpleado,crearSalida);
-
+router.get("/", verificarToken, esAdmin, obtenerSalidas);
+router.get("/:id", verificarToken, esAdmin, obtenerSalida);
+router.post("/", verificarToken, esAdmin, crearSalida);
+router.put("/:id", verificarToken, esAdmin, actualizarSalida);
 
 export default router;
-

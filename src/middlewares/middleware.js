@@ -9,14 +9,14 @@ export const validacionPersona = (req, res, next) => {
     { telefono: "string" },
     { correo: "string" },
     { usuario: "string" },
-    { password: "string" }, 
+    { password: "string" },
   ];
 
   // Verificar la presencia de campos requeridos
   const camposAusentes = verificarCamposRequeridos(jsonData, camposRequeridos);
   if (camposAusentes.length > 0) {
     return res.status(400).json({
-      mensaje: `Los siguientes campos son obligatorios: ${camposAusentes
+      message: `Los siguientes campos son obligatorios: ${camposAusentes
         .map((campo) => Object.keys(campo)[0])
         .join(", ")}`,
     });
@@ -29,7 +29,7 @@ export const validacionPersona = (req, res, next) => {
   );
   if (tiposDeDatoIncorrectos.length > 0) {
     return res.status(400).json({
-      mensaje: `Los siguientes campos no tienen el tipo de dato correcto: ${tiposDeDatoIncorrectos
+      message: `Los siguientes campos no tienen el tipo de dato correcto: ${tiposDeDatoIncorrectos
         .map((campo) => Object.keys(campo)[0])
         .join(", ")}`,
     });
@@ -39,11 +39,9 @@ export const validacionPersona = (req, res, next) => {
   const correoValido = validarCorreoElectronico(jsonData.correo);
   if (!correoValido) {
     return res.status(400).json({
-      mensaje: "El campo de correo electrónico no tiene un formato válido.",
+      message: "El campo de correo electrónico no tiene un formato válido.",
     });
   }
-
-  
 
   // Todos los campos requeridos están presentes y no están vacíos, pasar al siguiente middleware
   next();
@@ -92,13 +90,13 @@ export const validacionPersona = (req, res, next) => {
  */
 export const validacionCategoria = (req, res, next) => {
   const jsonData = req.body;
-  const camposRequeridos = [{ nombre: "string" }, { tipo: "string" }];
+  const camposRequeridos = [{ nombre: "string" }];
 
   // Verificar la presencia de campos requeridos
   const camposAusentes = verificarCamposRequeridos(jsonData, camposRequeridos);
   if (camposAusentes.length > 0) {
     return res.status(400).json({
-      mensaje: `Los siguientes campos son obligatorios: ${camposAusentes
+      message: `Los siguientes campos son obligatorios: ${camposAusentes
         .map((campo) => Object.keys(campo)[0])
         .join(", ")}`,
     });
@@ -111,7 +109,7 @@ export const validacionCategoria = (req, res, next) => {
   );
   if (tiposDeDatoIncorrectos.length > 0) {
     return res.status(400).json({
-      mensaje: `Los siguientes campos no tienen el tipo de dato correcto: ${tiposDeDatoIncorrectos
+      message: `Los siguientes campos no tienen el tipo de dato correcto: ${tiposDeDatoIncorrectos
         .map((campo) => Object.keys(campo)[0])
         .join(", ")}`,
     });
@@ -125,13 +123,19 @@ export const validacionCategoria = (req, res, next) => {
  */
 export const validacionProveedor = (req, res, next) => {
   const jsonData = req.body;
-  const camposRequeridos = [{nombre:"string"},{telefono: "string"},{email: "string"},{ nit: "string" }, { direccion: "string" }];
+  const camposRequeridos = [
+    { nombre: "string" },
+    { telefono: "string" },
+    { email: "string" },
+    { nit: "string" },
+    { direccion: "string" },
+  ];
 
   // Verificar la presencia de campos requeridos
   const camposAusentes = verificarCamposRequeridos(jsonData, camposRequeridos);
   if (camposAusentes.length > 0) {
     return res.status(400).json({
-      mensaje: `Los siguientes campos son obligatorios: ${camposAusentes
+      message: `Los siguientes campos son obligatorios: ${camposAusentes
         .map((campo) => Object.keys(campo)[0])
         .join(", ")}`,
     });
@@ -145,7 +149,7 @@ export const validacionProveedor = (req, res, next) => {
 
   if (tiposDeDatoIncorrectos.length > 0) {
     return res.status(400).json({
-      mensaje: `Los siguientes campos no tienen el tipo de dato correcto: ${tiposDeDatoIncorrectos
+      message: `Los siguientes campos no tienen el tipo de dato correcto: ${tiposDeDatoIncorrectos
         .map((campo) => Object.keys(campo)[0])
         .join(", ")}`,
     });
@@ -155,7 +159,7 @@ export const validacionProveedor = (req, res, next) => {
   const emailValido = validarCorreoElectronico(jsonData.email);
   if (!emailValido) {
     return res.status(400).json({
-      mensaje: "El campo de correo electrónico no tiene un formato válido.",
+      message: "El campo de correo electrónico no tiene un formato válido.",
     });
   }
   // Todos los campos requeridos están presentes y no están vacíos, pasar al siguiente middleware
@@ -239,7 +243,7 @@ export const validacionProveedor = (req, res, next) => {
 export const validacionServicio = (req, res, next) => {
   const jsonData = req.body;
   const camposRequeridos = [
-    { nombre_servicio: "string" },
+    { tipo_servicio: "string" },
     { descripcion_servicio: "string" },
   ];
 
@@ -247,7 +251,7 @@ export const validacionServicio = (req, res, next) => {
   const camposAusentes = verificarCamposRequeridos(jsonData, camposRequeridos);
   if (camposAusentes.length > 0) {
     return res.status(400).json({
-      mensaje: `Los siguientes campos son obligatorios: ${camposAusentes
+      message: `Los siguientes campos son obligatorios: ${camposAusentes
         .map((campo) => Object.keys(campo)[0])
         .join(", ")}`,
     });
@@ -260,7 +264,7 @@ export const validacionServicio = (req, res, next) => {
   );
   if (tiposDeDatoIncorrectos.length > 0) {
     return res.status(400).json({
-      mensaje: `Los siguientes campos no tienen el tipo de dato correcto: ${tiposDeDatoIncorrectos
+      message: `Los siguientes campos no tienen el tipo de dato correcto: ${tiposDeDatoIncorrectos
         .map((campo) => Object.keys(campo)[0])
         .join(", ")}`,
     });
@@ -276,14 +280,14 @@ export const validacionServicio = (req, res, next) => {
 
 export const validacionMarca = (req, res, next) => {
   const jsonData = req.body;
-  const camposRequeridos = [{ nombre: "string" }, { id_categoria: "number" }];
+  const camposRequeridos = [{ nombre: "string" }];
 
   // Verificar la presencia de campos requeridos
   const camposAusentes = verificarCamposRequeridos(jsonData, camposRequeridos);
 
   if (camposAusentes.length > 0) {
     return res.status(400).json({
-      mensaje: `Los siguientes campos son obligatorios: ${camposAusentes
+      message: `Los siguientes campos son obligatorios: ${camposAusentes
         .map((campo) => Object.keys(campo)[0])
         .join(", ")}`,
     });
@@ -297,7 +301,7 @@ export const validacionMarca = (req, res, next) => {
 
   if (tiposDeDatoIncorrectos.length > 0) {
     return res.status(400).json({
-      mensaje: `Los siguientes campos no tienen el tipo de dato correcto: ${tiposDeDatoIncorrectos
+      message: `Los siguientes campos no tienen el tipo de dato correcto: ${tiposDeDatoIncorrectos
         .map((campo) => Object.keys(campo)[0])
         .join(", ")}`,
     });
@@ -316,10 +320,11 @@ export const validacionProducto = (req, res, next) => {
   const camposRequeridos = [
     { codigo: "string" },
     { nombre: "string" },
-    { cantidad: "number" },
-    { precio: "number" },
+    { stock: "number" },
+    { precio: "float" },
     { id_marca: "number" },
     { id_proveedor: "number" },
+    { id_categoria: "number" },
   ];
 
   // Verificar la presencia de campos requeridos
@@ -327,7 +332,7 @@ export const validacionProducto = (req, res, next) => {
 
   if (camposAusentes.length > 0) {
     return res.status(400).json({
-      mensaje: `Los siguientes campos son obligatorios: ${camposAusentes
+      message: `Los siguientes campos son obligatorios: ${camposAusentes
         .map((campo) => Object.keys(campo)[0])
         .join(", ")}`,
     });
@@ -341,7 +346,7 @@ export const validacionProducto = (req, res, next) => {
 
   if (tiposDeDatoIncorrectos.length > 0) {
     return res.status(400).json({
-      mensaje: `Los siguientes campos no tienen el tipo de dato correcto: ${tiposDeDatoIncorrectos
+      message: `Los siguientes campos no tienen el tipo de dato correcto: ${tiposDeDatoIncorrectos
         .map((campo) => Object.keys(campo)[0])
         .join(", ")}`,
     });
@@ -357,14 +362,14 @@ export const validacionProducto = (req, res, next) => {
 
 export const validacionEntrada = (req, res, next) => {
   const jsonData = req.body;
-  const camposRequeridos = [{ id_empleado: "number" }, { fecha: "string" }];
+  const camposRequeridos = [{ id_admin: "number" }, { id_proveedor: "number" }];
 
   // Verificar la presencia de campos requeridos
   const camposAusentes = verificarCamposRequeridos(jsonData, camposRequeridos);
 
   if (camposAusentes.length > 0) {
     return res.status(400).json({
-      mensaje: `Los siguientes campos son obligatorios: ${camposAusentes
+      message: `Los siguientes campos son obligatorios: ${camposAusentes
         .map((campo) => Object.keys(campo)[0])
         .join(", ")}`,
     });
@@ -378,7 +383,7 @@ export const validacionEntrada = (req, res, next) => {
 
   if (tiposDeDatoIncorrectos.length > 0) {
     return res.status(400).json({
-      mensaje: `Los siguientes campos no tienen el tipo de dato correcto: ${tiposDeDatoIncorrectos
+      message: `Los siguientes campos no tienen el tipo de dato correcto: ${tiposDeDatoIncorrectos
         .map((campo) => Object.keys(campo)[0])
         .join(", ")}`,
     });
@@ -394,14 +399,14 @@ export const validacionEntrada = (req, res, next) => {
 
 export const validacionSalida = (req, res, next) => {
   const jsonData = req.body;
-  const camposRequeridos = [{ id_empleado: "number" }, { fecha: "string" }];
+  const camposRequeridos = [{ id_admin: "number" }];
 
   // Verificar la presencia de campos requeridos
   const camposAusentes = verificarCamposRequeridos(jsonData, camposRequeridos);
 
   if (camposAusentes.length > 0) {
     return res.status(400).json({
-      mensaje: `Los siguientes campos son obligatorios: ${camposAusentes
+      message: `Los siguientes campos son obligatorios: ${camposAusentes
         .map((campo) => Object.keys(campo)[0])
         .join(", ")}`,
     });
@@ -415,7 +420,7 @@ export const validacionSalida = (req, res, next) => {
 
   if (tiposDeDatoIncorrectos.length > 0) {
     return res.status(400).json({
-      mensaje: `Los siguientes campos no tienen el tipo de dato correcto: ${tiposDeDatoIncorrectos
+      message: `Los siguientes campos no tienen el tipo de dato correcto: ${tiposDeDatoIncorrectos
         .map((campo) => Object.keys(campo)[0])
         .join(", ")}`,
     });
@@ -428,17 +433,21 @@ export const validacionSalida = (req, res, next) => {
 /**
  * Middleware de validación de Cita
  */
-  
+
 export const validacionCita = (req, res, next) => {
   const jsonData = req.body;
-  const camposRequeridos = [{ fecha: "string" }, { id_servicio: "number" },{id_cliente: "number"}];
+  const camposRequeridos = [
+    { fecha: "string" },
+    { id_servicio: "number" },
+    { id_cliente: "number" },
+  ];
 
   // Verificar la presencia de campos requeridos
   const camposAusentes = verificarCamposRequeridos(jsonData, camposRequeridos);
 
   if (camposAusentes.length > 0) {
     return res.status(400).json({
-      mensaje: `Los siguientes campos son obligatorios: ${camposAusentes
+      message: `Los siguientes campos son obligatorios: ${camposAusentes
         .map((campo) => Object.keys(campo)[0])
         .join(", ")}`,
     });
@@ -452,17 +461,15 @@ export const validacionCita = (req, res, next) => {
 
   if (tiposDeDatoIncorrectos.length > 0) {
     return res.status(400).json({
-      mensaje: `Los siguientes campos no tienen el tipo de dato correcto: ${tiposDeDatoIncorrectos
+      message: `Los siguientes campos no tienen el tipo de dato correcto: ${tiposDeDatoIncorrectos
         .map((campo) => Object.keys(campo)[0])
         .join(", ")}`,
     });
   }
 
-  
-
   // Todos los campos requeridos están presentes y no están vacíos, pasar al siguiente middleware
   next();
-}
+};
 
 /**
  * Middleware de validación de login
@@ -477,7 +484,7 @@ export const validacionLogin = (req, res, next) => {
 
   if (camposAusentes.length > 0) {
     return res.status(400).json({
-      mensaje: `Los siguientes campos son obligatorios: ${camposAusentes
+      message: `Los siguientes campos son obligatorios: ${camposAusentes
         .map((campo) => Object.keys(campo)[0])
         .join(", ")}`,
     });
@@ -485,7 +492,7 @@ export const validacionLogin = (req, res, next) => {
 
   // Todos los campos requeridos están presentes y no están vacíos, pasar al siguiente middleware
   next();
-}
+};
 
 /**
  *

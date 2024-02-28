@@ -1,39 +1,37 @@
-import { pool } from "../db.js";
+import {
+  obtener,
+  obtenerPorId,
+  actualizarDatos,
+  insertarDatos,
+  validarCampoUnico,
+  validarLongitudesCampos,
+  eliminar,
+  validarCampoUnicoUpdate,
+} from "../utils.js";
 
 export const obtenerCategorias = async (req, res) => {
   try {
-    const [rows] = await pool.query("SELECT * FROM categoria");
-    res.json(rows);
+    const categorias = await obtener("categoria");
+    return res.status(200).json(categorias);
   } catch (error) {
     return res.status(500).json({
-      mesagge: "Error Interno del Servidor",
+      message: "Error Interno del Servidor",
       error: error.message,
     });
   }
 };
 
 export const obtenerCategoria = async (req, res) => {
-  const categoriaId = parseInt(req.params.id, 10);
+  const { id } = req.params;
   try {
-    if (isNaN(categoriaId)) {
-      return res.status(400).json({
-        message: "ID de categoria no valido",
+    const categoria = await obtenerPorId("categoria", id);
+    if (categoria.length <= 0) {
+      return res.status(404).json({
+        message: "Categoria no encontrada",
       });
     }
-
-    const [rows] = await pool.query(
-      "SELECT * FROM categoria WHERE id_categoria = ?",
-      [categoriaId]
-    );
-
-    if (rows.length <= 0)
-      return res.status(404).json({
-        mesagge: "Categoria no encontrada",
-      });
-
-    res.json(rows[0]);
+    res.json(categoria[0]);
   } catch (error) {
-    console.log(error);
     return res.status(500).json({
       mesagge: "Error Interno del Servidor",
       error: error.message,
@@ -42,45 +40,92 @@ export const obtenerCategoria = async (req, res) => {
 };
 
 export const crearCategoria = async (req, res) => {
-  const { nombre, tipo } = req.body;
-
+  const { nombre } = req.body;
   try {
-    // Validar longitudes máximas
-    const maxLongitudes = {
-      nombre: 50,
-      tipo: 45,
-    };
-
-    for (const [field, maxLength] of Object.entries(maxLongitudes)) {
-      if (req.body[field] && req.body[field].length > maxLength) {
-        return res.status(400).json({
-          message: `Longitud inválida para ${field}. Máxima longitud permitida es ${maxLength}.`,
-        });
-      }
+    const campos = { nombre };
+    const maxLongitudes = { nombre: 50 };
+    const campoInvalido = validarLongitudesCampos(campos, maxLongitudes);
+    if (campoInvalido) {
+      return res.status(400).json({
+        message: `El campo ${campoInvalido} excede la longitud máxima`,
+      });
     }
-
-    //Validar nombre unico
-    const nombreCategoria = await pool.query(
-      "SELECT id_categoria FROM categoria WHERE nombre = ?",
+    const campoUnico = await validarCampoUnico("categoria", "nombre", nombre);
+    if (campoUnico) {
+      return res.status(400).json({
+        message: `El nombre de la categoria ya existe`,
+      });
+    }
+    const nuevaCategoria = await insertarDatos(
+      "categoria",
+      ["nombre"],
       [nombre]
     );
-
-    if (nombreCategoria[0].length > 0) {
+    if (!nuevaCategoria) {
       return res.status(400).json({
-        message: "Nombre de categoria ya se encuentra registrado",
+        message: "Error al crear categoria",
+      });
+    }
+    res.sendStatus(201);
+  } catch (error) {
+    return res.status(500).json({
+      mesagge: "Error Interno del Servidor",
+      error: error.message,
+    });
+  }
+};
+
+export const actualizarCategoria = async (req, res) => {
+  const { id } = req.params;
+  const { nombre } = req.body;
+  try {
+    //Validar ID valido
+    if (isNaN(id)) {
+      return res.status(400).json({
+        message: "ID de categoria no valido",
       });
     }
 
-    const [rows] = await pool.query(
-      "INSERT INTO categoria ( nombre, tipo ) VALUES (?,?)",
-      [nombre, tipo]
+    const campos = { nombre };
+    const maxLongitudes = { nombre: 50 };
+    const campoInvalido = validarLongitudesCampos(campos, maxLongitudes);
+    if (campoInvalido) {
+      return res.status(400).json({
+        message: `El campo ${campoInvalido} excede la longitud máxima`,
+      });
+    }
+
+    //validar si la categoria existe
+    const categoria = await obtenerPorId("categoria", id);
+    if (categoria.length <= 0) {
+      return res.status(404).json({
+        message: "Categoria no encontrada",
+      });
+    }
+
+    //Validar campo unico
+    const campoUnico = await validarCampoUnicoUpdate(
+      "categoria",
+      "nombre",
+      "id_categoria",
+      nombre,
+      id
+    );
+    if (campoUnico) {
+      return res.status(400).json({
+        message: `El nombre de la categoria ya existe`,
+      });
+    }
+
+    //Actualizar categoria
+    const categoriaActualizada = await actualizarDatos(
+      "categoria",
+      ["nombre"],
+      nombre,
+      id
     );
 
-    res.send({
-      id_categoria: rows.insertId,
-      nombre,
-      tipo,
-    });
+    res.sendStatus(200);
   } catch (error) {
     return res.status(500).json({
       mesagge: "Error Interno del Servidor",
@@ -90,87 +135,30 @@ export const crearCategoria = async (req, res) => {
 };
 
 export const eliminarCategoria = async (req, res) => {
-  const categoriaId = parseInt(req.params.id, 10);
+  const { id } = req.params;
   try {
-    if (isNaN(categoriaId)) {
+    //Validar ID valido
+    if (isNaN(id)) {
       return res.status(400).json({
         message: "ID de categoria no valido",
       });
     }
 
-    const [result] = await pool.query(
-      "DELETE FROM categoria WHERE id_categoria = ?",
-      [categoriaId]
-    );
-
-    if (result.affectedRows === 0)
+    //validar si la categoria existe
+    const categoria = await obtenerPorId("categoria", id);
+    if (categoria.length <= 0) {
       return res.status(404).json({
-        mesagge: "Categoria no encontrada",
+        message: "Categoria no encontrada",
       });
+    }
 
-    res.status(200).json({
-      message: "Categoria eliminada",
-    });
-  } catch (error) {
-    return res.status(500).json({
-      mesagge: "Error Interno del Servidor",
-      error: error.message,
-    });
-  }
-}
-
-export const actualizarCategoria = async (req, res) => {
-  const { nombre, tipo } = req.body;
-  const categoriaId = parseInt(req.params.id, 10);
-  try {
-    if (isNaN(categoriaId)) {
+    const categoriaEliminada = await eliminar("categoria", id);
+    if (!categoriaEliminada) {
       return res.status(400).json({
-        message: "ID de categoria no valido",
+        message: "Error al eliminar categoria",
       });
     }
-
-    // Validar longitudes máximas
-    const maxLongitudes = {
-      nombre: 50,
-      tipo: 45,
-    };
-
-    for (const [field, maxLength] of Object.entries(maxLongitudes)) {
-      if (req.body[field] && req.body[field].length > maxLength) {
-        return res.status(400).json({
-          message: `Longitud inválida para ${field}. Máxima longitud permitida es ${maxLength}.`,
-        });
-      }
-    }
-
-    //Validar nombre unico
-    const nombreCategoria = await pool.query(
-      "SELECT id_categoria FROM categoria WHERE nombre = ? AND id_categoria != ?",
-      [nombre,categoriaId]
-    );
-
-    if (nombreCategoria[0].length > 0) {
-      return res.status(400).json({
-        message: "Nombre de categoria ya se encuentra registrado",
-      });
-    }
-
-    const [result] = await pool.query(
-      "UPDATE categoria SET nombre = IFNULL(?, nombre), tipo = IFNULL(?, tipo) WHERE id_categoria = ?",
-      [nombre, tipo, categoriaId]
-    );
-
-    if (result.affectedRows === 0)
-      return res.status(404).json({
-        mesagge: "Categoria no encontrada",
-      });
-
-    const [rows] = await pool.query(
-      "SELECT * FROM categoria WHERE id_categoria = ?",
-      [categoriaId]
-    );
-
-    res.json(rows[0]);
+    res.sendStatus(200);
   } catch (error) {
     return res.status(500).json({
       mesagge: "Error Interno del Servidor",

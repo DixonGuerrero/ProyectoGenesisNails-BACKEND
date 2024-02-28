@@ -1,77 +1,55 @@
-import {pool} from '../db.js';
-import jwt from 'jsonwebtoken';
-import bcrypt from 'bcryptjs';
-import {SECRET_KEY} from '../config.js';
+import {
+  obtenerPorCampo,
+  insertarDatos,
+  validarCampoUnico,
+  validarLongitudesCampos,
+} from "../utils.js";
+import jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
+import { SECRET_KEY } from "../config.js";
 
 export const login = async (req, res) => {
-    const {usuario, password} = req.body;
-    
-    try {
-        const [rows] = await pool.query(
-        "SELECT * FROM usuario WHERE usuario = ? ",
-        [usuario]
-        );
-
-        if (rows.length <= 0)
-        return res.status(404).json({
-            mesagge: "Usuario no encontrado",
-        });
-
-        const validPassword = bcrypt.compareSync(password, rows[0].password);
-
-        if (!validPassword) {
-            return res.status(400).json({
-            mesagge: "Contraseña incorrecta",
-            });
-        }
-        const token = jwt.sign({id: rows[0].id_usuario},SECRET_KEY,{
-            expiresIn: 60 * 60 * 24
-        })
-
-        res.status(200).json({
-            token
-        });
-
-    } catch (error) {
-        return res.status(500).json({
-        mesagge: "Error Interno del Servidor",
-        error: error.message,
-        });
-    }
-
-} 
-
-export const registrar = async (req, res) => {
-  const { nombres, apellidos, telefono, correo,rol,cargo,usuario,password } = req.body;
-
-  const roles = ["empleado", "cliente"];
+  const { usuario, password } = req.body;
 
   try {
-    // Validar campos únicos
-    const correoExiste = await pool.query(
-      "SELECT id_persona FROM persona WHERE correo = ?",
-      [correo]
-    );
+    const rows = await obtenerPorCampo("usuario", "usuario", usuario);
 
-    if (correoExiste[0].length > 0) {
+    if (rows.length <= 0)
+      return res.status(404).json({
+        message: "Usuario no encontrado",
+      });
+
+    const validPassword = bcrypt.compareSync(password, rows[0].password);
+
+    if (!validPassword) {
       return res.status(400).json({
-        message: "Correo electronico ya se encuentra registrado",
+        message: "Contraseña incorrecta",
       });
     }
+    const token = jwt.sign({ id: rows[0].id_usuario }, SECRET_KEY, {
+      expiresIn: 60 * 60 * 24,
+    });
 
-    const usuarioExiste = await pool.query(
-      "SELECT id_usuario FROM usuario WHERE usuario = ?",
-      [usuario]
-    );
+    res.status(200).json({
+      token,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      mesagge: "Error Interno del Servidor",
+      error: error.message,
+    });
+  }
+};
 
-    if (usuarioExiste[0].length > 0) {
-      return res.status(400).json({
-        message: "Usuario ya se encuentra registrado",
-      });
-    }
+export const registrar = async (req, res) => {
+  const { nombres, apellidos, telefono, correo, rol, usuario, password } =
+    req.body;
 
+  const roles = ["admin", "cliente"];
+
+  try {
     // Validar longitudes máximas
-    const maxLongitudes = {
+    const Longitudes = {
       nombres: 50,
       apellidos: 50,
       telefono: 15,
@@ -80,82 +58,122 @@ export const registrar = async (req, res) => {
       password: 50,
     };
 
-    for (const [field, maxLength] of Object.entries(maxLongitudes)) {
-      if (req.body[field] && req.body[field].length > maxLength) {
+    const camposLongitudInvalida = validarLongitudesCampos(
+      req.body,
+      Longitudes
+    );
+
+    if (camposLongitudInvalida) {
+      return res.status(400).json({
+        message: `El campo ${camposLongitudInvalida} excede la longitud máxima.`,
+      });
+    }
+
+    // Validar campos únicos
+    const correoExiste = await validarCampoUnico("persona", "correo", correo);
+    const usuarioExiste = await validarCampoUnico(
+      "usuario",
+      "usuario",
+      usuario
+    );
+
+    if (usuarioExiste) {
+      return res.status(400).json({
+        message: `El usuario ${usuario} ya está en uso.`,
+      });
+    }
+    if (correoExiste) {
+      return res.status(400).json({
+        message: `El correo ${correo} ya está en uso.`,
+      });
+    }
+    //Crear Persona
+    const campos = ["nombres", "apellidos", "telefono", "correo"];
+    const valores = [nombres, apellidos, telefono, correo];
+    const nuevaPersona = await insertarDatos("persona", campos, valores);
+
+    if (!nuevaPersona) {
+      return res.status(400).json({
+        message: "Error al crear persona",
+      });
+    }
+
+    //Crear Usuario
+    if (usuario && password) {
+      //Encriptar contraseña
+      const salt = bcrypt.genSaltSync(10);
+      const hash = bcrypt.hashSync(password, salt);
+      let passwordHash = hash;
+
+      const camposUsuario = ["id_persona", "usuario", "password"];
+      const valoresUsuario = [nuevaPersona, usuario, passwordHash];
+
+      const nuevoUsuario = await insertarDatos(
+        "usuario",
+        camposUsuario,
+        valoresUsuario
+      );
+
+      if (!nuevoUsuario) {
         return res.status(400).json({
-          message: `Longitud inválida para ${field}. Máxima longitud permitida es ${maxLength}.`,
+          message: "Error al crear usuario",
         });
       }
     }
-   
-    const [rows] = await pool.query(
-      "INSERT INTO persona (nombres, apellidos, telefono, correo ) VALUES (?,?,?,?)",
-      [nombres, apellidos, telefono, correo]
-    );
 
-    //Crear Usuario
-    if(usuario && password){
-
-        //Encriptar contraseña
-        const salt = bcrypt.genSaltSync(10);
-        const hash = bcrypt.hashSync(password, salt);
-        let passwordHash = hash;
-        console.log(passwordHash)
-
-      await pool.query(
-        "INSERT INTO usuario (id_persona,usuario,password) VALUES (?,?,?)",
-        [rows.insertId,usuario,passwordHash]
-      );
-
-    }
-
-    //Creamos rol 
-
-    if(rol){
+    //Insertamos Persona en Cliente o Empleado
+    console.log("antes de crear el rol");
+    if (rol) {
+      console.log("si existe el rol");
       if (!roles.includes(rol)) {
+        console.log("no es un rol valido");
         return res.status(400).json({
           message: "Rol no valido",
         });
       }
-        if(rol === "empleado"){
-          if(!cargo){
-            await pool.query(
-            `INSERT INTO empleado (id_persona,cargo) VALUES (?,manicurista)`,
-            [rows.insertId]
-          );
-          }else{
-            await pool.query(
-            `INSERT INTO empleado (id_persona,cargo) VALUES (?,?)`,
-            [rows.insertId,cargo]
-          );
-          }
-          
-    }
-  }else{
-      await pool.query(
-        `INSERT INTO cliente (id_persona) VALUES (?)`,
-        [rows.insertId]
+      if (rol == "admin") {
+        console.log("es admin");
+        const nuevoAdmin = await insertarDatos(
+          "admin",
+          ["id_persona"],
+          [nuevaPersona]
+        );
+
+        if (!nuevoAdmin) {
+          return res.status(400).json({
+            message: "Error al crear admin",
+          });
+        }
+      } else {
+        console.log("es cliente");
+        const nuevoCliente = await insertarDatos(
+          "cliente",
+          ["id_persona"],
+          [nuevaPersona]
+        );
+      }
+    } else {
+      console.log("es cliente");
+      const nuevoCliente = await insertarDatos(
+        "cliente",
+        ["id_persona"],
+        [nuevaPersona]
       );
     }
 
-    console.log('Llego aqui')
-
     //Respuesta Token
-    const token = jwt.sign({id: rows.insertId},SECRET_KEY,{
-      expiresIn: 60 * 60 * 24
-    })
+    const token = jwt.sign({ id: nuevaPersona }, SECRET_KEY, {
+      expiresIn: 60 * 60 * 24,
+    });
 
     res.status(200).json({
-        token
+      token,
     });
-   
-
-
-    } catch (error) {
-      return res.status(500).json({
-        mesagge: "Error Interno del Servidor",
-        error: error.message,
-      });
-    }
-    }
-    
+  } catch (error) {
+    console.log("BUENAS");
+    return res.status(500).json({
+      mesagge: "Error Interno del Servidor",
+      error: error.message,
+    });
+  }
+};

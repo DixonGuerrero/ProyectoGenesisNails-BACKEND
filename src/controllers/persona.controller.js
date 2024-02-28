@@ -1,8 +1,21 @@
+import {
+  validarCampoUnico,
+  insertarDatos,
+  validarLongitudesCampos,
+  obtenerPorId,
+  eliminar,
+  actualizarDatosUsuario,
+  actualizarDatos,
+  validarCampoUnicoUpdate,
+} from "../utils.js";
+import bcrypt from "bcryptjs";
 import { pool } from "../db.js";
 
 export const obtenerPersonas = async (req, res) => {
   try {
-    const [rows] = await pool.query("SELECT p.id_persona,p.nombres,p.apellidos,p.telefono,p.correo,CASE WHEN e.id_persona IS NOT NULL THEN 'Empleado'WHEN c.id_persona IS NOT NULL THEN 'Cliente'ELSE null END AS rol,p.created_at,p.updated_at FROM persona p LEFT JOIN empleado e ON p.id_persona = e.id_persona LEFT JOIN cliente c ON p.id_persona = c.id_persona");
+    const [rows] = await pool.query(
+      "SELECT p.id_persona,p.nombres,p.apellidos,p.telefono,p.correo,CASE WHEN a.id_persona IS NOT NULL THEN 'Admin'WHEN c.id_persona IS NOT NULL THEN 'Cliente'ELSE null END AS rol,p.created_at,p.updated_at FROM persona p LEFT JOIN admin a ON p.id_persona = a.id_persona LEFT JOIN cliente c ON p.id_persona = c.id_persona"
+    );
     res.json(rows);
   } catch (error) {
     return res.status(500).json({
@@ -23,7 +36,7 @@ export const obtenerPersona = async (req, res) => {
     }
 
     const [rows] = await pool.query(
-      "SELECT p.id_persona,p.nombres,p.apellidos,p.telefono,p.correo,CASE WHEN e.id_persona IS NOT NULL THEN 'Empleado'WHEN c.id_persona IS NOT NULL THEN 'Cliente'ELSE null END AS rol,p.created_at,p.updated_at FROM persona p LEFT JOIN empleado e ON p.id_persona = e.id_persona LEFT JOIN cliente c ON p.id_persona = c.id_persona WHERE p.id_persona = ?",
+      "SELECT p.id_persona,p.nombres,p.apellidos,p.telefono,p.correo,CASE WHEN a.id_persona IS NOT NULL THEN 'Admin'WHEN c.id_persona IS NOT NULL THEN 'Cliente'ELSE null END AS rol,p.created_at,p.updated_at FROM persona p LEFT JOIN admin a ON p.id_persona = a.id_persona LEFT JOIN cliente c ON p.id_persona = c.id_persona WHERE p.id_persona = ?",
       [personaId]
     );
 
@@ -41,37 +54,102 @@ export const obtenerPersona = async (req, res) => {
   }
 };
 
-export const crearPersona = async (req, res) => {
-  const { nombres, apellidos, telefono, correo,role,cargo,usuario,password } = req.body;
+export const obtenerPersonaUsuario = async (req, res) => {
+  try {
+    const usuarioId = parseInt(req.params.id, 10);
 
-  const roles = ["empleado", "cliente"];
+    if (isNaN(usuarioId)) {
+      return res.status(400).json({
+        message: "ID de Usuario no válida proporcionada",
+      });
+    }
+
+    const [rows] = await pool.query(
+      "SELECT p.id_persona,p.nombres, p.apellidos,p.telefono,p.correo, u.id_usuario,u.imagen,u.usuario,u.password  FROM persona p JOIN usuario u ON p.id_persona = u.id_persona WHERE id_usuario = ?",
+      [usuarioId]
+    );
+
+    if (rows.length <= 0)
+      return res.status(404).json({
+        mesagge: "Usuario no encontrado",
+      });
+
+    res.json(rows[0]);
+  } catch (error) {
+    return res.status(500).json({
+      mesagge: "Error Interno del Servidor",
+      error: error.message,
+    });
+  }
+};
+
+export const obtenerPersonaCliente = async (req, res) => {
+  try {
+    const clienteId = parseInt(req.params.id, 10);
+
+    if (isNaN(clienteId)) {
+      return res.status(400).json({
+        message: "ID de Cliente no válida proporcionada",
+      });
+    }
+
+    const [rows] = await pool.query(
+      "SELECT p.id_persona,p.nombres, p.apellidos,p.telefono,p.correo, c.id_cliente FROM persona p JOIN cliente c ON p.id_persona = c.id_persona WHERE id_cliente = ?",
+      [clienteId]
+    );
+
+    if (rows.length <= 0)
+      return res.status(404).json({
+        mesagge: "Cliente no encontrado",
+      });
+
+    res.json(rows[0]);
+  } catch (error) {
+    return res.status(500).json({
+      mesagge: "Error Interno del Servidor",
+      error: error.message,
+    });
+  }
+};
+
+export const obtenerPersonaAdmin = async (req, res) => {
+  try {
+    const adminId = parseInt(req.params.id, 10);
+
+    if (isNaN(adminId)) {
+      return res.status(400).json({
+        message: "ID de Admin no válida proporcionada",
+      });
+    }
+
+    const [rows] = await pool.query(
+      "SELECT p.id_persona,p.nombres, p.apellidos,p.telefono,p.correo, a.id_admin FROM persona p JOIN admin a ON p.id_persona = a.id_persona WHERE id_admin = ?",
+      [adminId]
+    );
+
+    if (rows.length <= 0)
+      return res.status(404).json({
+        mesagge: "Admin no encontrado",
+      });
+
+    res.json(rows[0]);
+  } catch (error) {
+    return res.status(500).json({
+      mesagge: "Error Interno del Servidor",
+      error: error.message,
+    });
+  }
+};
+
+export const crearPersona = async (req, res) => {
+  const { nombres, apellidos, telefono, correo, rol, usuario, password } =
+    req.body;
+
+  const roles = ["admin", "cliente"];
 
   try {
-    // Validar campos únicos
-    const correoExiste = await pool.query(
-      "SELECT id_persona FROM persona WHERE correo = ?",
-      [correo]
-    );
-
-    if (correoExiste[0].length > 0) {
-      return res.status(400).json({
-        message: "Correo electronico ya se encuentra registrado",
-      });
-    }
-
-    const usuarioExiste = await pool.query(
-      "SELECT id_usuario FROM usuario WHERE usuario = ?",
-      [usuario]
-    );
-
-    if (usuarioExiste[0].length > 0) {
-      return res.status(400).json({
-        message: "Usuario ya se encuentra registrado",
-      });
-    }
-
     // Validar longitudes máximas
-    const maxLongitudes = {
+    const Longitudes = {
       nombres: 50,
       apellidos: 50,
       telefono: 15,
@@ -80,67 +158,110 @@ export const crearPersona = async (req, res) => {
       password: 50,
     };
 
-    for (const [field, maxLength] of Object.entries(maxLongitudes)) {
-      if (req.body[field] && req.body[field].length > maxLength) {
+    const camposLongitudInvalida = validarLongitudesCampos(
+      req.body,
+      Longitudes
+    );
+
+    if (camposLongitudInvalida) {
+      return res.status(400).json({
+        message: `El campo ${camposLongitudInvalida} excede la longitud máxima.`,
+      });
+    }
+
+    // Validar campos únicos
+    const correoExiste = await validarCampoUnico("persona", "correo", correo);
+    const usuarioExiste = await validarCampoUnico(
+      "usuario",
+      "usuario",
+      usuario
+    );
+
+    if (usuarioExiste) {
+      return res.status(400).json({
+        message: `El usuario ${usuario} ya está en uso.`,
+      });
+    }
+    if (correoExiste) {
+      return res.status(400).json({
+        message: `El correo ${correo} ya está en uso.`,
+      });
+    }
+    //Crear Persona
+    const campos = ["nombres", "apellidos", "telefono", "correo"];
+    const valores = [nombres, apellidos, telefono, correo];
+    const nuevaPersona = await insertarDatos("persona", campos, valores);
+
+    if (!nuevaPersona) {
+      return res.status(400).json({
+        message: "Error al crear persona",
+      });
+    }
+
+    //Crear Usuario
+    if (usuario && password) {
+      //Encriptar contraseña
+      const salt = bcrypt.genSaltSync(10);
+      const hash = bcrypt.hashSync(password, salt);
+      let passwordHash = hash;
+
+      const camposUsuario = ["id_persona", "usuario", "password"];
+      const valoresUsuario = [nuevaPersona, usuario, passwordHash];
+
+      const nuevoUsuario = await insertarDatos(
+        "usuario",
+        camposUsuario,
+        valoresUsuario
+      );
+
+      if (!nuevoUsuario) {
         return res.status(400).json({
-          message: `Longitud inválida para ${field}. Máxima longitud permitida es ${maxLength}.`,
+          message: "Error al crear usuario",
         });
       }
     }
-   
-    const [rows] = await pool.query(
-      "INSERT INTO persona (nombres, apellidos, telefono, correo ) VALUES (?,?,?,?)",
-      [nombres, apellidos, telefono, correo]
-    );
 
-    //Crear Usuario
-    if(usuario && password){
-
-      await pool.query(
-        "INSERT INTO usuario (id_persona,usuario,password) VALUES (?,?,?)",
-        [rows.insertId,usuario,password]
-      );
-
-    }
-
-    //Creamos rol 
-
-    if(role){
-      if (!roles.includes(role)) {
+    //Insertamos Persona en Cliente o Empleado
+    console.log("antes de crear el rol");
+    if (rol) {
+      console.log("si existe el rol");
+      if (!roles.includes(rol)) {
+        console.log("no es un rol valido");
         return res.status(400).json({
           message: "Rol no valido",
         });
       }
-        if(role === "empleado"){
-          if(!cargo){
-            await pool.query(
-            `INSERT INTO empleado (id_persona,cargo) VALUES (?,manicurista)`,
-            [rows.insertId]
-          );
-          }else{
-            await pool.query(
-            `INSERT INTO empleado (id_persona,cargo) VALUES (?,?)`,
-            [rows.insertId,cargo]
-          );
-          }
-          
-    }
-  }else{
-      await pool.query(
-        `INSERT INTO cliente (id_persona) VALUES (?)`,
-        [rows.insertId]
+      if (rol == "admin") {
+        console.log("es admin");
+        const nuevoAdmin = await insertarDatos(
+          "admin",
+          ["id_persona"],
+          [nuevaPersona]
+        );
+
+        if (!nuevoAdmin) {
+          return res.status(400).json({
+            message: "Error al crear admin",
+          });
+        }
+      } else {
+        console.log("es cliente");
+        const nuevoCliente = await insertarDatos(
+          "cliente",
+          ["id_persona"],
+          [nuevaPersona]
+        );
+      }
+    } else {
+      console.log("es cliente");
+      const nuevoCliente = await insertarDatos(
+        "cliente",
+        ["id_persona"],
+        [nuevaPersona]
       );
     }
 
-    res.send({
-      id_persona: rows.insertId,
-      nombres,
-      apellidos,
-      telefono,
-      correo,
-      usuario,
-      rol: role || "cliente",
-    });
+    res.sendStatus(201);
   } catch (error) {
     return res.status(500).json({
       mesagge: "Error Interno del Servidor",
@@ -151,7 +272,6 @@ export const crearPersona = async (req, res) => {
 
 export const eliminarPersona = async (req, res) => {
   try {
-
     const personaId = parseInt(req.params.id, 10);
 
     if (isNaN(personaId)) {
@@ -160,15 +280,21 @@ export const eliminarPersona = async (req, res) => {
       });
     }
 
-    const [result] = await pool.query(
-      "DELETE FROM persona WHERE id_persona = ?",
-      [personaId]
-    );
-
-    if (result.affectedRows <= 0)
+    //Validar si la persona existe
+    const persona = await obtenerPorId("persona", personaId);
+    if (persona.length <= 0) {
       return res.status(404).json({
-        mesagge: "Persona no encontrada",
+        message: "Persona no encontrada",
       });
+    }
+
+    const result = await eliminar("persona", personaId);
+
+    if (!result) {
+      return res.status(404).json({
+        message: "Persona no encontrada",
+      });
+    }
 
     res.sendStatus(204);
   } catch (error) {
@@ -180,63 +306,104 @@ export const eliminarPersona = async (req, res) => {
 };
 
 export const actualizarPersona = async (req, res) => {
-  const { nombres, apellidos, telefono, correo,cargo,usuario,password } = req.body;
+  const { nombres, apellidos, telefono, correo, imagen, usuario, password } =
+    req.body;
   const personaId = parseInt(req.params.id, 10);
   try {
-    if (isNaN(personaId)){
+    if (isNaN(personaId)) {
       return res.status(400).json({
-        message: "ID de persona no valido",
+        message: "ID de persona no válida proporcionada",
       });
     }
 
     // Validar longitudes máximas
-    const maxLongitudes = {
+    const Longitudes = {
       nombres: 50,
       apellidos: 50,
       telefono: 15,
+      imagen: 60,
       correo: 70,
       usuario: 50,
       password: 50,
     };
 
-    for (const [field, maxLength] of Object.entries(maxLongitudes)) {
-      if (req.body[field] && req.body[field].length > maxLength) {
+    const camposLongitudInvalida = validarLongitudesCampos(
+      req.body,
+      Longitudes
+    );
+
+    if (camposLongitudInvalida) {
+      return res.status(400).json({
+        message: `El campo ${camposLongitudInvalida} excede la longitud máxima.`,
+      });
+    }
+
+    // Validar campos únicos
+
+    if (usuario) {
+      const usuarioExiste = await validarCampoUnicoUpdate(
+        "usuario",
+        "usuario",
+        "id_persona",
+        usuario,
+        personaId
+      );
+
+      if (usuarioExiste) {
         return res.status(400).json({
-          message: `Longitud inválida para ${field}. Máxima longitud permitida es ${maxLength}.`,
+          message: `El usuario ${usuario} ya está en uso.`,
         });
       }
     }
-    // Actualizar persona
-    const [result] = await pool.query(
-      "UPDATE persona SET nombres = IFNULL(?,nombres), apellidos = IFNULL(?,apellidos), telefono = IFNULL(?,telefono), correo = IFNULL(?,correo) WHERE id_persona = ?",
-      [nombres, apellidos, telefono, correo, personaId]
-    );
+    if (correo) {
+      const correoExiste = await validarCampoUnicoUpdate(
+        "persona",
+        "correo",
+        "id_persona",
+        correo,
+        personaId
+      );
 
-    if (result.affectedRows <= 0)
+      if (correoExiste) {
+        return res.status(400).json({
+          message: `El correo ${correo} ya está en uso.`,
+        });
+      }
+    }
+
+    //Validar si la persona existe
+    const persona = await obtenerPorId("persona", personaId);
+    console.log(persona);
+    if (persona.length <= 0) {
       return res.status(404).json({
-        mesagge: "Persona no encontrada",
+        message: "Persona no encontrada",
       });
-
-
-    //Actualizar Usuario
-    if(usuario || password){
-      await pool.query(
-        "UPDATE usuario SET usuario = IFNULL(?,usuario), password = IFNULL(?,password) WHERE id_persona = ?",
-        [usuario, password, personaId]
-      );
-    
     }
 
-    // Actualizar Empleado
-    if(cargo){
-      await pool.query(
-        "UPDATE empleado SET cargo = IFNULL(?,cargo) WHERE id_persona = ?",
-        [cargo, personaId]
+    //Actualizar Persona
+    const campos = ["nombres", "apellidos", "telefono", "correo"];
+    const valores = [nombres, apellidos, telefono, correo];
+    const result = await actualizarDatos("persona", campos, valores, personaId);
+
+    if (imagen || usuario || password) {
+      //Actualizar Usuario
+      let passwordHash;
+      if (password) {
+        const salt = bcrypt.genSaltSync(10);
+        const hash = bcrypt.hashSync(password, salt);
+        passwordHash = hash;
+      }
+
+      const camposUsuario = ["usuario", "imagen", "password"];
+      const valoresUsuario = [usuario, imagen, passwordHash];
+      const result = await actualizarDatosUsuario(
+        camposUsuario,
+        valoresUsuario,
+        personaId
       );
     }
 
-    
-    res.sendStatus(204);
+    res.sendStatus(200);
   } catch (error) {
     return res.status(500).json({
       mesagge: "Error Interno del Servidor",

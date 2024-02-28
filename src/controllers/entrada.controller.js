@@ -1,229 +1,244 @@
-import {pool} from '../db.js'
+import { pool } from "../db.js";
+import {
+  validarLongitudesCampos,
+  obtenerPorId,
+  insertarDatos,
+} from "../utils.js";
 
 export const obtenerEntradas = async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT s.id_entrada, s.fecha,sp.cantidad AS cantidad_entrada, p.codigo,p.nombre, p.cantidad AS cantidad_stock, p.precio,p.id_marca FROM entrada s JOIN entrada_producto sp ON s.id_entrada = sp.id_entrada JOIN producto p ON sp.id_producto = p.id_producto ORDER BY id_entrada ASC')
-    res.json(rows)
+    const [rows] = await pool.query(
+      "SELECT s.id_entrada, s.created_at,sp.cantidad AS cantidad_entrada, p.codigo,p.nombre, p.stock, p.precio,p.id_marca,p.id_categoria FROM entrada s JOIN entrada_producto sp ON s.id_entrada = sp.id_entrada JOIN producto p ON sp.id_producto = p.id_producto ORDER BY id_entrada ASC"
+    );
+    res.json(rows);
   } catch (error) {
     return res.status(500).json({
-      mesagge: 'Error Interno del Servidor',
-      error: error.message
-    })
+      mesagge: "Error Interno del Servidor",
+      error: error.message,
+    });
   }
-}
+};
 
-export const obtenerEntrada = async (req, res) => { 
-  const entradaId = parseInt(req.params.id, 10)
+export const obtenerEntrada = async (req, res) => {
+  const entradaId = parseInt(req.params.id, 10);
   try {
     if (isNaN(entradaId)) {
       return res.status(400).json({
-        message: 'El ID de entrada no valido '
-      })
+        message: "El ID de entrada no valido ",
+      });
     }
-    const [rows] = await pool.query('SELECT s.id_entrada, s.fecha,sp.cantidad AS cantidad_entrada, p.codigo,p.nombre, p.cantidad AS cantidad_stock, p.precio,p.id_marca FROM entrada s JOIN entrada_producto sp ON s.id_entrada = sp.id_entrada JOIN producto p ON sp.id_producto = p.id_producto  WHERE s.id_entrada = ?', [entradaId])
+    const [rows] = await pool.query(
+      "SELECT s.id_entrada, s.created_at,sp.cantidad AS cantidad_entrada,p.id_producto, p.codigo,p.nombre, p.stock, p.precio,p.id_marca,p.id_categoria FROM entrada s JOIN entrada_producto sp ON s.id_entrada = sp.id_entrada JOIN producto p ON sp.id_producto = p.id_producto  WHERE s.id_entrada = ?",
+      [entradaId]
+    );
 
-    if (rows.length <= 0) return res.status(404).json({
-      mesagge: 'Entrada no encontrada'
-    })
-    res.json(rows)
+    if (rows.length <= 0)
+      return res.status(404).json({
+        mesagge: "Entrada no encontrada",
+      });
+    res.json(rows);
   } catch (error) {
     return res.status(500).json({
-      mesagge: 'Error Interno del Servidor',
-      error: error.message
-    })
+      mesagge: "Error Interno del Servidor",
+      error: error.message,
+    });
   }
-}
+};
 
-export const crearEntrada = async (req, res) => { 
-  const {id_empleado,productos = [], fecha} = req.body
-  
+export const crearEntrada = async (req, res) => {
+  const { id_admin, productos = [], id_proveedor } = req.body;
+
   try {
     // Validar longitudes máximas
     const maxLongitudes = {
-      id_empleado: 25,
-      fecha:15,
-    }
-    for (const [field, maxLength] of Object.entries(maxLongitudes)) {
-      if (req.body[field] && req.body[field].length > maxLength) {
-        return res.status(400).json({
-          message: `Longitud inválida para ${field}. Máxima longitud permitida es ${maxLength}.`
-        })
-      }
-    }
-    // Validar Fecha
-    if (fecha && !/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
+      id_admin: 25,
+      id_proveedor: 25,
+    };
+
+    const camposLongitudInvalida = validarLongitudesCampos(
+      req.body,
+      maxLongitudes
+    );
+    if (camposLongitudInvalida) {
       return res.status(400).json({
-        message: 'Formato de fecha invalido'
-      })
+        message: `Longitud inválida para ${camposLongitudInvalida}. Máxima longitud permitida es ${maxLongitudes[camposLongitudInvalida]}.`,
+      });
     }
-    //Validar existencia de empleado
-    const empleado = await pool.query('SELECT id_empleado FROM empleado WHERE id_empleado = ?', [id_empleado])
-    if (empleado[0].length <= 0) {
-      return res.status(400).json({
-        message: 'Empleado no encontrado'
-      })
+
+    //Validar existencia de admin
+    const existeAdmin = await obtenerPorId("admin", id_admin);
+
+    if (existeAdmin.length <= 0) {
+      return res.status(404).json({
+        message: "Admin no encontrado",
+      });
     }
-    
+
+    //Validar existencia de proveedor
+    const existeProveedor = await obtenerPorId("proveedor", id_proveedor);
+
+    if (existeProveedor.length <= 0) {
+      return res.status(404).json({
+        message: "Proveedor no encontrado",
+      });
+    }
+
     //Crear la entrada
-    const [rows2] = await pool.query('INSERT INTO entrada (id_empleado, fecha) VALUES (?,?)', [id_empleado, fecha])
+    const nuevaEntrada = await insertarDatos(
+      "entrada",
+      ["id_admin", "id_proveedor"],
+      [id_admin, id_proveedor]
+    );
+    console.log("AQUI TORY", nuevaEntrada);
+
+    if (!nuevaEntrada) {
+      return res.status(400).json({
+        message: "Error al crear entrada",
+      });
+    }
 
     //Validar si vienen productos
     if (!productos || productos.length <= 0) {
       return res.status(400).json({
-        message: 'Debe ingresar al menos un producto'
-      })
+        message: "Debe ingresar al menos un producto",
+      });
     }
 
     //Validar si vienen varios productos
     if (productos.length > 1) {
-          //Crear los productos de la entrada
-    const productosNoEncontrados = [];
-    for (const producto of productos) {
-      const {id_producto, cantidad} = producto
-      //Validar la existencia del producto
-      const productoDB = await pool.query('SELECT id_producto FROM producto WHERE id_producto = ?', [id_producto])
+      //Validar que todos los productos existan
+      const productosNoEncontrados = [];
+      for (const producto of productos) {
+        const { id_producto } = producto;
+        //Validar la existencia del producto
+        const productoDB = await obtenerPorId("producto", id_producto);
 
-      if (productoDB[0].length <= 0) {
-        productosNoEncontrados.push(id_producto)
-        continue
+        if (!productoDB[0]) {
+          productosNoEncontrados.push(id_producto);
+          continue;
+        }
       }
 
-      const [rows] = await pool.query('INSERT INTO entrada_producto (id_entrada, id_producto, cantidad) VALUES (?,?,?)', [rows2.insertId, id_producto, cantidad])
-    }
-
-    if(productosNoEncontrados.length > 0) return res.status(400).json({
-      message: 'Productos no encontrados',
-      productos: productosNoEncontrados
-    })
-    } else {
-      const {id_producto, cantidad} = productos[0]
-      //Validar la existencia del producto
-      const productoDB = await pool.query('SELECT id_producto FROM producto WHERE id_producto = ?', [id_producto])
-
-      if (productoDB[0].length <= 0) {
+      if (productosNoEncontrados.length > 0)
         return res.status(400).json({
-          message: 'Producto no encontrado'
-        })
-      }
-
-      const [rows3] = await pool.query('INSERT INTO entrada_producto (id_entrada, id_producto, cantidad) VALUES (?,?,?)', [rows2.insertId, id_producto, cantidad])
-
+          message: "Productos no encontrados",
+          productos: productosNoEncontrados,
+        });
+      console.log("DESPUES DE PRODUCTOS NO ENCONTRADOS");
     }
 
-    
-    res.status(201).json({
-      mesagge: 'Entrada creada'
-    
-    })
-  
+    console.log("hora de insertar los productos");
+
+    //Insertar los productos en la entrada
+    for (const producto of productos) {
+      const { id_producto, cantidad, precio } = producto;
+      //Validar la existencia del producto
+      const productoDB = await obtenerPorId("producto", id_producto);
+
+      if (productoDB[0]) {
+        console.log("Insertando Productos");
+        //Crear el producto de la entrada
+        const insertarProductos = await insertarDatos(
+          "entrada_producto",
+          ["id_entrada", "id_producto", "cantidad", "precio"],
+          [nuevaEntrada, id_producto, cantidad, precio]
+        );
+
+        continue;
+      }
+    }
+
+    res.sendStatus(201);
   } catch (error) {
     return res.status(500).json({
-      mesagge: 'Error Interno del Servidor',
-      error: error.message
-    })
+      mesagge: "Error Interno del Servidor",
+      error: error.message,
+    });
   }
-}
+};
 
-
-export const actualizarEntrada = async (req, res) => {  
-  const {productos = [], fecha,} = req.body
-  const entradaId = parseInt(req.params.id, 10)
+export const actualizarEntrada = async (req, res) => {
+  const { productos = [] } = req.body;
+  const entradaId = parseInt(req.params.id, 10);
   try {
     if (isNaN(entradaId)) {
       return res.status(400).json({
-        message: 'ID de entrada no valido'
-      })
-    }
-    // Validar longitudes máximas
-    const maxLongitudes = {
-      cantidad: 10,
-      fecha: 15
-    }
-    for (const [field, maxLength] of Object.entries(maxLongitudes)) {
-      if (req.body[field] && req.body[field].length > maxLength) {
-        return res.status(400).json({
-          message: `Longitud inválida para ${field}. Máxima longitud permitida es ${maxLength}.`
-        })
-      }
-    }
-
-    //validar fecha
-    if(fecha){
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
-        return res.status(400).json({
-          message: 'Formato de fecha invalido'
-        })
-      }
+        message: "ID de entrada no valido",
+      });
     }
 
     //Validar entrada
-    const entrada = await pool.query('SELECT id_entrada FROM entrada WHERE id_entrada = ?', [entradaId])
-    if (entrada[0].length <= 0) {
+    const validarEntrada = await obtenerPorId("entrada", entradaId);
+
+    if (validarEntrada.length <= 0) {
       return res.status(404).json({
-        message: 'Entrada no encontrada'
-      })
+        message: "Entrada no encontrada",
+      });
     }
 
     //Validar si vienen productos
-    if (productos || productos.length > 0) {
-      
-      //Validamos cuantos productos vienen
-      if (productos.length > 1) {
-        //Crear los productos de la entrada
-        const productosNoEncontrados = [];
-        for (const producto of productos) {
-          const {id_producto, cantidad} = producto
-          //Validar la existencia del producto
-          const productoDB = await pool.query('SELECT id_producto FROM producto WHERE id_producto = ?', [id_producto])
+    if (!productos || productos.length <= 0) {
+      return res.status(400).json({
+        message: "Debe ingresar al menos un producto",
+      });
+    }
 
-          if (productoDB[0].length <= 0) {
-            productosNoEncontrados.push(id_producto)
-            continue
-          }
-
-          const [rows7] = await pool.query('UPDATE entrada_producto SET cantidad = IFNULL(?,cantidad) WHERE id_entrada = ? AND id_producto = ?', [cantidad, entradaId, id_producto])
-        }
-
-        if(productosNoEncontrados.length > 0) return res.status(400).json({
-          message: 'Productos no encontrados',
-          productos: productosNoEncontrados
-        })
-      } else {
-        const {id_producto, cantidad} = productos[0]
+    //Validamos cuantos productos vienen
+    if (productos.length >= 1) {
+      //Validar que todos los productos existan
+      const productosNoEncontrados = [];
+      for (const producto of productos) {
+        const { id_producto } = producto;
         //Validar la existencia del producto
-        const productoDB = await pool.query('SELECT id_producto FROM producto WHERE id_producto = ?', [id_producto])
+        const productoDB = await pool.query(
+          "SELECT * FROM entrada_producto WHERE id_producto = ? AND id_entrada = ?",
+          [id_producto, entradaId]
+        );
 
         if (productoDB[0].length <= 0) {
-          return res.status(400).json({
-            message: 'Producto no encontrado'
-          })
+          productosNoEncontrados.push(id_producto);
+          continue;
         }
+      }
 
-        const [rows3] = await pool.query('UPDATE entrada_producto SET cantidad = ? WHERE id_entrada = ? AND id_producto = ?', [cantidad, entradaId, id_producto])
-
+      if (productosNoEncontrados.length > 0) {
+        console.log("entramos en la validacion para no encontrados");
+        return res.status(400).json({
+          message: "Productos no existen o no encontrados dentro de la salida",
+          productos: productosNoEncontrados,
+        });
       }
     }
 
-    //Actualizar entrada
-    if(fecha){
-      const [rows5] = await pool.query('UPDATE entrada SET fecha = ? WHERE id_entrada = ?', [fecha, entradaId])
+    //Actualizar los productos en la entrada
+    for (const producto of productos) {
+      const { id_producto, cantidad, precio } = producto;
+      //Validar la existencia del producto
+      const productoDB = await obtenerPorId("producto", id_producto);
 
-      if(rows5.affectedRows <= 0) return res.status(404).json({
-        mesagge: 'Entrada no encontrada'
-      })
+      if (productoDB[0]) {
+        console.log("Actualizando Productos");
+        //Crear el producto de la entrada
+        const actualizarEP = await pool.query(
+          "UPDATE entrada_producto SET cantidad =IFNULL(?,cantidad) , precio = IFNULL(?,precio) WHERE id_entrada = ? AND id_producto = ?",
+          [cantidad, precio, entradaId, id_producto]
+        );
+
+        if (!actualizarEP) {
+          return res.status(400).json({
+            message: "Error al actualizar entrada",
+          });
+        }
+
+        continue;
+      }
     }
 
-    const [rows] = await pool.query('UPDATE entrada SET id_empleado = IFNULL(?,id_empleado), fecha = IFNULL(?,fecha) WHERE id_entrada = ?', [id_empleado, fecha, entradaId])
-    if (rows.affectedRows <= 0) return res.status(404).json({
-      mesagge: 'Entrada no encontrada'
-    })
-    res.json({
-      mesagge: 'Entrada actualizada'
-    })
+    res.sendStatus(200);
   } catch (error) {
     return res.status(500).json({
-      mesagge: 'Error Interno del Servidor',
-      error: error.message
-    })
+      mesagge: "Error Interno del Servidor",
+      error: error.message,
+    });
   }
-}
+};
