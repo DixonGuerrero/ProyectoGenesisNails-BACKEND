@@ -13,7 +13,7 @@ import {
 export const obtenerProductos = async (req, res) => {
   try {
     const [rows] = await pool.query(
-      "SELECT p.id_producto , p.codigo, p.nombre, p. stock, p.precio , pr.nombre as proveedor, m.nombre as marca, c.nombre as categoria FROM producto as p JOIN proveedor_producto as pp ON p.id_producto = pp.id_producto JOIN proveedor as pr ON pp.id_proveedor = pr.id_proveedor JOIN marca as m ON m.id_marca = p.id_marca JOIN categoria as c ON p.id_categoria = c.id_categoria ORDER BY id_producto ASC"
+      "SELECT p.id_producto , p.codigo, p.nombre, p. stock, p.precio ,p.imagen, pr.nombre as proveedor, m.nombre as marca, c.nombre as categoria FROM producto as p JOIN proveedor_producto as pp ON p.id_producto = pp.id_producto JOIN proveedor as pr ON pp.id_proveedor = pr.id_proveedor JOIN marca as m ON m.id_marca = p.id_marca JOIN categoria as c ON p.id_categoria = c.id_categoria ORDER BY id_producto ASC"
     );
 
     res.json(rows);
@@ -155,7 +155,7 @@ export const obtenerProducto = async (req, res) => {
 
     //Realizamos la consulta
     const [rows] = await pool.query(
-      "SELECT p.id_producto , p.codigo, p.nombre, p. stock, p.precio , pr.nombre as proveedor, m.nombre as marca, c.nombre as categoria FROM producto as p JOIN proveedor_producto as pp ON p.id_producto = pp.id_producto JOIN proveedor as pr ON pp.id_proveedor = pr.id_proveedor JOIN marca as m ON m.id_marca = p.id_marca JOIN categoria as c ON p.id_categoria = c.id_categoria WHERE p.id_producto = ?",
+      "SELECT p.id_producto , p.codigo, p.nombre, p. stock, p.precio,p.imagen , pr.nombre as proveedor, m.nombre as marca, c.nombre as categoria FROM producto as p JOIN proveedor_producto as pp ON p.id_producto = pp.id_producto JOIN proveedor as pr ON pp.id_proveedor = pr.id_proveedor JOIN marca as m ON m.id_marca = p.id_marca JOIN categoria as c ON p.id_categoria = c.id_categoria WHERE p.id_producto = ?",
       [productoId]
     );
 

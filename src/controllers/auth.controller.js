@@ -14,6 +14,8 @@ export const login = async (req, res) => {
   try {
     const rows = await obtenerPorCampo("usuario", "usuario", usuario);
 
+    console.log(rows)
+
     if (rows.length <= 0)
       return res.status(404).json({
         message: "Usuario no encontrado",
