@@ -36,8 +36,8 @@ app.use("/api/salida/", salidaRoutes);
 app.use("/api/producto/", productoRoutes);
 app.use("/api/entrada/", entradaRoutes);
 app.use("/api/cita/", citaRoutes);
-app.use("/api/login", loginRoutes);
-app.use("/api/register", registerRoutes);
+app.use("/api/login/", loginRoutes);
+app.use("/api/register/", registerRoutes);
 
 
 //La ruta no existe
