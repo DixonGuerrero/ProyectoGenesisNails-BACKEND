@@ -13,9 +13,7 @@ import entradaRoutes from "./routes/entrada.routes.js";
 
 import citaRoutes from "./routes/cita.routes.js";
 
-import loginRoutes from "./routes/login.routes.js";
-
-import registerRoutes from "./routes/register.routes.js";
+import authRoutes from "./routes/auth.routes.js";
 
 import salidaRoutes from "./routes/salida.routes.js";
 
@@ -36,8 +34,7 @@ app.use("/api/salida/", salidaRoutes);
 app.use("/api/producto/", productoRoutes);
 app.use("/api/entrada/", entradaRoutes);
 app.use("/api/cita/", citaRoutes);
-app.use("/api/login/", loginRoutes);
-app.use("/api/register/", registerRoutes);
+app.use("/api/auth/", authRoutes);
 
 
 //La ruta no existe
