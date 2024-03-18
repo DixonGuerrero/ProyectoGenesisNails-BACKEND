@@ -19,12 +19,9 @@ import salidaRoutes from "./routes/salida.routes.js";
 
 const app = express();
 app.use(express.json());
-app.use(cors({
-  origin: 'genesisnails.azurewebsites.net',
-  methods: ["GET", "POST", "DELETE","PUT"]
-}));
+app.use(cors());
 
-
+app.use("/api/auth/", authRoutes);
 //app.use("/api/", usuarioRoutes);
 app.use("/api/persona/", personaRoutes);
 app.use("/api/proveedor/", proveedorRoutes);
@@ -37,7 +34,7 @@ app.use("/api/salida/", salidaRoutes);
 app.use("/api/producto/", productoRoutes);
 app.use("/api/entrada/", entradaRoutes);
 app.use("/api/cita/", citaRoutes);
-app.use("/api/auth/", authRoutes);
+
 
 //La ruta no existe
 app.use((req, res) => {
