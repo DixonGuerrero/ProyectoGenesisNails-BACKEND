@@ -321,7 +321,7 @@ export const validacionProducto = (req, res, next) => {
     { codigo: "string" },
     { nombre: "string" },
     { stock: "number" },
-    { precio: "float" },
+    { precio: "number" },
     { id_marca: "number" },
     { id_proveedor: "number" },
     { id_categoria: "number" },
