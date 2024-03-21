@@ -6,7 +6,7 @@ import {
   obtenerMarca,
   obtenerMarcas,
 } from "../controllers/marca.controller.js";
-import { validacionMarca } from "../middlewares/middleware.js";
+import { validacionMarca } from "../Middlewares/middleware.js";
 import { esAdmin, verificarToken } from "../middlewares/authJwt.js";
 
 const router = Router();

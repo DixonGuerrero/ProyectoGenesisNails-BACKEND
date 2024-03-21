@@ -142,7 +142,7 @@ export const obtenerPersonaAdmin = async (req, res) => {
 };
 
 export const crearPersona = async (req, res) => {
-  const { nombres, apellidos, telefono, correo, rol, usuario, password } =
+  const { nombres, apellidos, telefono, correo, rol, usuario, password ,imagen} =
     req.body;
 
   const roles = ["admin", "cliente"];
@@ -198,16 +198,35 @@ export const crearPersona = async (req, res) => {
       });
     }
 
+
     //Crear Usuario
     if (usuario && password) {
       //Encriptar contraseña
-      const salt = bcrypt.genSaltSync(10);
-      const hash = bcrypt.hashSync(password, salt);
-      let passwordHash = hash;
+        const salt = bcrypt.genSaltSync(10);
+        const hash = bcrypt.hashSync(password, salt);
+        let passwordHash = hash;
+
+      
+      if(imagen){
+        const camposUsuario = ["id_persona", "usuario", "password", "imagen"];
+        const valoresUsuario = [nuevaPersona, usuario, passwordHash, imagen];
+
+        const nuevoUsuario = await insertarDatos(
+          "usuario",
+          camposUsuario,
+          valoresUsuario
+        );
+
+        if (!nuevoUsuario) {
+          return res.status(400).json({
+            message: "Error al crear usuario",
+          });
+        }
+      }else{
 
       const camposUsuario = ["id_persona", "usuario", "password"];
       const valoresUsuario = [nuevaPersona, usuario, passwordHash];
-
+    
       const nuevoUsuario = await insertarDatos(
         "usuario",
         camposUsuario,
@@ -219,6 +238,7 @@ export const crearPersona = async (req, res) => {
           message: "Error al crear usuario",
         });
       }
+    }
     }
 
     //Insertamos Persona en Cliente o Empleado

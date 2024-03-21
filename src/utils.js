@@ -41,6 +41,7 @@ export const obtenerPorCampo = async (tabla, campo, valor) => {
     );
     return rows;
   } catch (error) {
+    
     return error;
   }
 };
