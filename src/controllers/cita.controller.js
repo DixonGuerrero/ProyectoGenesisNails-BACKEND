@@ -13,6 +13,8 @@ export const obtenerCitas = async (req, res) => {
     const [rows] = await pool.query(
       "SELECT c.id_cita, s.id_servicio,c.fecha_cita,s.imagen, s.tipo_servicio, s.descripcion_servicio, cl.id_cliente FROM cita c JOIN servicio_cita ON c.id_cita = servicio_cita.id_cita JOIN servicio s ON s.id_servicio = servicio_cita.id_servicio JOIN cliente as cl ON cl.id_cliente = c.id_cliente ORDER BY id_cita ASC;"
     );
+
+    console.log(rows);
     res.json(rows);
   } catch (error) {
     return res.status(500).json({

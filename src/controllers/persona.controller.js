@@ -316,7 +316,7 @@ export const eliminarPersona = async (req, res) => {
       });
     }
 
-    res.sendStatus(204);
+    res.sendStatus(201);
   } catch (error) {
     return res.status(500).json({
       mesagge: "Error Interno del Servidor",
