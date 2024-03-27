@@ -341,7 +341,7 @@ export const actualizarProducto = async (req, res) => {
   const {
     codigo,
     nombre,
-    cantidad,
+    stock,
     precio,
     id_marca,
     id_proveedor,
@@ -460,7 +460,7 @@ export const actualizarProducto = async (req, res) => {
     const valores = [
       codigo,
       nombre,
-      cantidad,
+      stock,
       precio,
       id_marca,
       id_categoria,
