@@ -177,7 +177,7 @@ export const crearProducto = async (req, res) => {
   const {
     codigo,
     nombre,
-    cantidad,
+    stock,
     precio,
     id_marca,
     id_proveedor,
@@ -189,7 +189,7 @@ export const crearProducto = async (req, res) => {
     const maxLongitudes = {
       codigo: 25,
       nombre: 50,
-      cantidad: 10,
+      stock: 10,
       precio: 10,
       id_marca: 10,
       id_proveedor: 10,
@@ -255,7 +255,7 @@ export const crearProducto = async (req, res) => {
       nuevoProducto = await insertarDatos(
         "producto",
         ["codigo", "nombre", "stock", "precio", "id_marca", "id_categoria"],
-        [codigo, nombre, cantidad, precio, id_marca, id_categoria]
+        [codigo, nombre, stock, precio, id_marca, id_categoria]
       );
 
       if (!nuevoProducto) {
@@ -276,7 +276,7 @@ export const crearProducto = async (req, res) => {
           "id_categoria",
           "imagen",
         ],
-        [codigo, nombre, cantidad, precio, id_marca, id_categoria, imagen]
+        [codigo, nombre, stock, precio, id_marca, id_categoria, imagen]
       );
     }
 
