@@ -118,12 +118,15 @@ export const actualizarCategoria = async (req, res) => {
     }
 
     //Actualizar categoria
-    const categoriaActualizada = await actualizarDatos(
-      "categoria",
-      ["nombre"],
-      nombre,
-      id
-    );
+    const camposactualizar = ["nombre"];
+    const valores = [nombre];
+    const categoriaActualizada = await actualizarDatos('categoria',camposactualizar,valores,id);
+
+    if(!categoriaActualizada){
+      return res.status(400).json({
+        message: "Error al actualizar categoria",
+      });
+    }
 
     res.sendStatus(200);
   } catch (error) {
