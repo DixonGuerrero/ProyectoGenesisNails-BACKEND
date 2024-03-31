@@ -8,9 +8,12 @@ import {
 export const obtenerEntradas = async (req, res) => {
   try {
     const [rows] = await pool.query(
-      "SELECT s.id_entrada, s.created_at,sp.cantidad AS cantidad_entrada, p.codigo as codigo_producto,p.nombre as producto, p.precio,p.id_marca,p.id_categoria FROM entrada s JOIN entrada_producto sp ON s.id_entrada = sp.id_entrada JOIN producto p ON sp.id_producto = p.id_producto ORDER BY id_entrada ASC"
+      "SELECT s.id_entrada, s.created_at,sp.cantidad AS cantidad_entrada, p.codigo as codigo_producto,p.nombre as producto, p.precio,p.id_marca,p.id_categoria ,s.id_proveedor as proveedor FROM entrada s JOIN entrada_producto sp ON s.id_entrada = sp.id_entrada JOIN producto p ON sp.id_producto = p.id_producto ORDER BY id_entrada ASC"
     );
-    res.json(rows);
+
+    let datos = transformarDatos(rows);
+
+    res.json(datos);
   } catch (error) {
     return res.status(500).json({
       mesagge: "Error Interno del Servidor",
@@ -28,7 +31,7 @@ export const obtenerEntrada = async (req, res) => {
       });
     }
     const [rows] = await pool.query(
-      "SELECT s.id_entrada, s.created_at,sp.cantidad AS cantidad_entrada, p.codigo as codigo_producto,p.nombre as producto, p.precio,p.id_marca,p.id_categoria FROM entrada s JOIN entrada_producto sp ON s.id_entrada = sp.id_entrada JOIN producto p ON sp.id_producto = p.id_producto  WHERE s.id_entrada = ?",
+      "SELECSELECT s.id_entrada, s.created_at,sp.cantidad AS cantidad_entrada, p.codigo as codigo_producto,p.nombre as producto, p.precio,p.id_marca,p.id_categoria ,s.id_proveedor as proveedor FROM entrada s JOIN entrada_producto sp ON s.id_entrada = sp.id_entrada JOIN producto p ON sp.id_producto = p.id_producto ORDER BY id_entrada AS  WHERE s.id_entrada = ?",
       [entradaId]
     );
 
@@ -36,7 +39,10 @@ export const obtenerEntrada = async (req, res) => {
       return res.status(404).json({
         mesagge: "Entrada no encontrada",
       });
-    res.json(rows);
+
+    let datos = transformarDatos(rows);
+
+    res.json(datos);
   } catch (error) {
     return res.status(500).json({
       mesagge: "Error Interno del Servidor",
@@ -242,3 +248,32 @@ export const actualizarEntrada = async (req, res) => {
     });
   }
 };
+
+function transformarDatos(datos) {
+  const resultado = [];
+
+  datos.forEach(dato => {
+      let entradaExistente = resultado.find(entrada => entrada.id_entrada === dato.id_entrada);
+      
+      if (!entradaExistente) {
+          entradaExistente = {
+              id_entrada: dato.id_entrada,
+              created_at: dato.created_at,
+              proveedor: dato.proveedor,
+              productos: []
+          };
+          resultado.push(entradaExistente);
+      }
+
+      entradaExistente.productos.push({
+          cantidad_entrada: dato.cantidad_entrada,
+          codigo_producto: dato.codigo_producto,
+          producto: dato.producto,
+          precio: dato.precio,
+          id_marca: dato.id_marca,
+          id_categoria: dato.id_categoria
+      });
+  });
+
+  return resultado;
+}
