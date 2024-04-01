@@ -8,7 +8,7 @@ import {
 export const obtenerEntradas = async (req, res) => {
   try {
     const [rows] = await pool.query(
-      "SELECT s.id_entrada, s.created_at,sp.cantidad AS cantidad_entrada, p.codigo as codigo_producto,p.nombre as producto, p.precio,p.id_marca,p.id_categoria ,s.id_proveedor as proveedor FROM entrada s JOIN entrada_producto sp ON s.id_entrada = sp.id_entrada JOIN producto p ON sp.id_producto = p.id_producto ORDER BY id_entrada ASC"
+      "SELECT s.id_entrada, s.created_at,sp.cantidad AS cantidad_entrada,p.id_producto, p.codigo as codigo_producto,p.nombre as producto, p.precio,p.id_marca,p.id_categoria ,s.id_proveedor as proveedor FROM entrada s JOIN entrada_producto sp ON s.id_entrada = sp.id_entrada JOIN producto p ON sp.id_producto = p.id_producto ORDER BY id_entrada ASC"
     );
 
     let datos = transformarDatos(rows);
@@ -31,7 +31,7 @@ export const obtenerEntrada = async (req, res) => {
       });
     }
     const [rows] = await pool.query(
-      "SELECSELECT s.id_entrada, s.created_at,sp.cantidad AS cantidad_entrada, p.codigo as codigo_producto,p.nombre as producto, p.precio,p.id_marca,p.id_categoria ,s.id_proveedor as proveedor FROM entrada s JOIN entrada_producto sp ON s.id_entrada = sp.id_entrada JOIN producto p ON sp.id_producto = p.id_producto ORDER BY id_entrada AS  WHERE s.id_entrada = ?",
+      "SELECT s.id_entrada, s.created_at,sp.cantidad AS cantidad_entrada,p.id_producto, p.codigo as codigo_producto,p.nombre as producto, p.precio,p.id_marca,p.id_categoria ,s.id_proveedor as proveedor FROM entrada s JOIN entrada_producto sp ON s.id_entrada = sp.id_entrada JOIN producto p ON sp.id_producto = p.id_producto  WHERE s.id_entrada = ?",
       [entradaId]
     );
 
@@ -266,6 +266,7 @@ function transformarDatos(datos) {
       }
 
       entradaExistente.productos.push({
+          id_producto: dato.id_producto,
           cantidad_entrada: dato.cantidad_entrada,
           codigo_producto: dato.codigo_producto,
           producto: dato.producto,

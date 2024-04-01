@@ -8,7 +8,7 @@ import {
 export const obtenerSalidas = async (req, res) => {
   try {
     const [rows] = await pool.query(
-      "SELECT s.id_salida, s.created_at,sp.cantidad AS cantidad_salida, p.codigo,p.nombre, p.stock, p.precio,p.id_marca,p.id_categoria FROM salida s JOIN salida_producto sp ON s.id_salida = sp.id_salida JOIN producto p ON sp.id_producto = p.id_producto ORDER BY id_salida ASC"
+      "SELECT s.id_salida, s.created_at,sp.cantidad AS cantidad_salida,p.id_producto, p.codigo,p.nombre, p.stock, p.precio,p.id_marca,p.id_categoria FROM salida s JOIN salida_producto sp ON s.id_salida = sp.id_salida JOIN producto p ON sp.id_producto = p.id_producto ORDER BY id_salida ASC"
     );
 
     let datos = transformarDatos(rows);
@@ -252,9 +252,10 @@ function transformarDatos(datos) {
     }
 
     entradaExistente.productos.push({
-      cantidad_salida: dato.cantidad_salida,
-      codigo_producto: dato.codigo_producto,
-      producto: dato.producto,
+      id_producto: dato.id_producto,
+      cantidad: dato.cantidad_salida,
+      codigo: dato.codigo,
+      producto: dato.nombre,
       precio: dato.precio,
       id_marca: dato.id_marca,
       id_categoria: dato.id_categoria,
