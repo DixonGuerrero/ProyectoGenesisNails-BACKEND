@@ -14,7 +14,7 @@ import { pool } from "../db.js";
 export const obtenerPersonas = async (req, res) => {
   try {
     const [rows] = await pool.query(
-      "SELECT p.id_persona,p.nombres,p.apellidos,p.telefono,p.correo,CASE WHEN a.id_persona IS NOT NULL THEN 'Admin' WHEN c.id_persona IS NOT NULL THEN 'Cliente'ELSE null END AS rol,p.created_at,p.updated_at , u.imagen, u.usuario, u.password, c.id_cliente FROM persona p LEFT JOIN admin a ON p.id_persona = a.id_persona LEFT JOIN cliente c ON p.id_persona = c.id_persona LEFT JOIN usuario u ON p.id_persona = u.id_persona"
+      "SELECT p.id_persona,p.nombres,p.apellidos,p.telefono,p.correo,CASE WHEN a.id_persona IS NOT NULL THEN 'Admin' WHEN c.id_persona IS NOT NULL THEN 'Cliente'ELSE null END AS rol,p.created_at,p.updated_at , u.imagen, u.usuario, u.password, c.id_cliente , a.id_admin FROM persona p LEFT JOIN admin a ON p.id_persona = a.id_persona LEFT JOIN cliente c ON p.id_persona = c.id_persona LEFT JOIN usuario u ON p.id_persona = u.id_persona"
     );
     res.json(rows);
   } catch (error) {
